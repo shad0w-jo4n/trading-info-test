@@ -1,0 +1,82 @@
+version: '3.8'
+
+volumes:
+  database_valume: {}
+
+services:
+  nginx:
+    image: nginx:1.21-alpine
+    links:
+      - application
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+  application:
+    links:
+      - redis
+      - postgres
+      - migrator
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    deploy:
+      mode: replicated
+      replicas: 4
+    environment:
+      - REDIS_URL=redis://redis
+      - DATABASE_URL=postgresql://trade:trade@postgres:5432/trade
+      - CURRENCIES_FROM=BTC,ETH
+      - CURRENCIES_TO=USD,EUR,RUB
+      - CURRENCIES_RATE_UPDATER_CRON=*/1 * * * *
+      - CRYPTOCOMPARE_PRICEMULTI_URL=https://min-api.cryptocompare.com/data/pricemulti
+    expose:
+      - "3000"
+
+  migrator:
+    links:
+      - postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://trade:trade@postgres:5432/trade
+    entrypoint: npm run migration:run
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  postgres:
+    image: timescale/timescaledb:2.5.1-pg14
+    environment:
+      - POSTGRES_USER=trade
+      - POSTGRES_PASSWORD=trade
+      - POSTGRES_DB=trade
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - database_valume:/var/lib/postgresql/data/pgdata
+      - ./postgresql:/etc/postgesql
+    command: postgres -c config_file=/etc/postgesql/postgresql.conf
+    healthcheck:
+      test: ["CMD", "pg_isready" , "-U", "trade"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
