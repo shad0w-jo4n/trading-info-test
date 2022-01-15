@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS "currency_rate"
 );
 
 SELECT create_hypertable('currency_rate', 'date', if_not_exists := true);
-SELECT add_retention_policy('currency_rate', INTERVAL '1 years', if_not_exists := true);
+SELECT add_retention_policy('currency_rate', INTERVAL '3 months', if_not_exists := true);
 
 -- TODO: This doesn't support in transaction block. We need to think about it.
 -- CREATE INDEX ON "currency_rate" ("from", "to", "date" DESC) WITH (timescaledb.transaction_per_chunk);
