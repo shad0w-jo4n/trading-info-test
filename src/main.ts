@@ -5,7 +5,6 @@ import { HandlerSetup } from './setup/handler.setup';
 import { ConnectionsSetup } from './setup/connections.setup';
 
 async function bootstrap(): Promise<void> {
-  // TODO: Add migration tool.
   const connections = await ConnectionsSetup();
 
   DiSetup(connections.postgres, connections.redis);

@@ -17,7 +17,6 @@ type GetCurrenciesRateArgs = {
  * Get currencies rates.
  *
  * @param ctx
- * @constructor
  */
 export function GetCurrenciesRateMethod(ctx: RpcContext): Promise<CurrencyRate[]> {
   const args = ctx.args as GetCurrenciesRateArgs | undefined;
